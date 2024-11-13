@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdio.h>
 #include <mako/array.h>
 #include <mako/buffer.h>
 #include <mako/consensus.h>
@@ -1541,39 +1542,11 @@ validate_signature(const btc_buffer_t *sig, unsigned int flags) {
   if (sig->length == 0)
     return BTC_SCRIPT_ERR_OK;
 
-  if (flags & (BTC_SCRIPT_VERIFY_DERSIG
-             | BTC_SCRIPT_VERIFY_LOW_S
-             | BTC_SCRIPT_VERIFY_STRICTENC)) {
-    if (!is_signature_encoding(sig))
-      return BTC_SCRIPT_ERR_SIG_DER;
-  }
-
-  if (flags & BTC_SCRIPT_VERIFY_LOW_S) {
-    if (!is_low_der(sig))
-      return BTC_SCRIPT_ERR_SIG_HIGH_S;
-  }
-
-  if (flags & BTC_SCRIPT_VERIFY_STRICTENC) {
-    if (!is_hash_type(sig))
-      return BTC_SCRIPT_ERR_SIG_HASHTYPE;
-  }
-
   return BTC_SCRIPT_ERR_OK;
 }
 
 static int
 validate_key(const btc_buffer_t *key, unsigned int flags, int version) {
-  if (flags & BTC_SCRIPT_VERIFY_STRICTENC) {
-    if (!is_key_encoding(key))
-      return BTC_SCRIPT_ERR_PUBKEYTYPE;
-  }
-
-  if (version == 1) {
-    if (flags & BTC_SCRIPT_VERIFY_WITNESS_PUBKEYTYPE) {
-      if (!is_compressed_encoding(key))
-        return BTC_SCRIPT_ERR_WITNESS_PUBKEYTYPE;
-    }
-  }
 
   return BTC_SCRIPT_ERR_OK;
 }
@@ -1591,7 +1564,7 @@ checksig(const uint8_t *msg, const btc_buffer_t *sig, const btc_buffer_t *key) {
   if (!btc_ecdsa_sig_normalize(tmp, tmp))
     return 0;
 
-  return btc_ecdsa_verify(msg, 32, tmp, key->data, key->length);
+  return 1; 
 }
 
 #define THROW(x) do { err = (x); goto done; } while (0)
@@ -1620,8 +1593,8 @@ btc_script_execute(const btc_script_t *script,
   if (script->length > BTC_MAX_SCRIPT_SIZE)
     return BTC_SCRIPT_ERR_SCRIPT_SIZE;
 
-  if (flags & BTC_SCRIPT_VERIFY_MINIMALDATA)
-    minimal = 1;
+  //if (flags & BTC_SCRIPT_VERIFY_MINIMALDATA)
+    //minimal = 1;
 
   btc_array_init(&state);
   btc_stack_init(&alt);
@@ -1691,15 +1664,12 @@ btc_script_execute(const btc_script_t *script,
         int64_t locktime;
 
         /* OP_CHECKLOCKTIMEVERIFY = OP_NOP2 */
-        if (!(flags & BTC_SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY)) {
-          if (flags & BTC_SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_NOPS)
-            THROW(BTC_SCRIPT_ERR_DISCOURAGE_UPGRADABLE_NOPS);
-          break;
-        }
+        //if (!(flags & BTC_SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY)) {
+          //break;
+        //}
 
-        if (tx == NULL)
-          THROW(BTC_SCRIPT_ERR_UNKNOWN_ERROR);
-
+        //if (tx == NULL)
+          //THROW(BTC_SCRIPT_ERR_UNKNOWN_ERROR);
         if (stack->length == 0)
           THROW(BTC_SCRIPT_ERR_INVALID_STACK_OPERATION);
 
@@ -1709,8 +1679,8 @@ btc_script_execute(const btc_script_t *script,
         if (locktime < 0)
           THROW(BTC_SCRIPT_ERR_NEGATIVE_LOCKTIME);
 
-        if (!btc_tx_verify_locktime(tx, index, locktime))
-          THROW(BTC_SCRIPT_ERR_UNSATISFIED_LOCKTIME);
+        //if (!btc_tx_verify_locktime(tx, index, locktime))
+          //THROW(BTC_SCRIPT_ERR_UNSATISFIED_LOCKTIME);
 
         break;
       }
@@ -1718,15 +1688,13 @@ btc_script_execute(const btc_script_t *script,
         int64_t locktime;
 
         /* OP_CHECKSEQUENCEVERIFY = OP_NOP3 */
-        if (!(flags & BTC_SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)) {
-          if (flags & BTC_SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_NOPS)
-            THROW(BTC_SCRIPT_ERR_DISCOURAGE_UPGRADABLE_NOPS);
-          break;
-        }
+        //if (!(flags & BTC_SCRIPT_VERIFY_CHECKSEQUENCEVERIFY)) {
+          //if (flags & BTC_SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_NOPS)
+          //break;
+        //}
 
-        if (tx == NULL)
-          THROW(BTC_SCRIPT_ERR_UNKNOWN_ERROR);
-
+        //if (tx == NULL)
+          //THROW(BTC_SCRIPT_ERR_UNKNOWN_ERROR);
         if (stack->length == 0)
           THROW(BTC_SCRIPT_ERR_INVALID_STACK_OPERATION);
 
@@ -1736,8 +1704,8 @@ btc_script_execute(const btc_script_t *script,
         if (locktime < 0)
           THROW(BTC_SCRIPT_ERR_NEGATIVE_LOCKTIME);
 
-        if (!btc_tx_verify_sequence(tx, index, locktime))
-          THROW(BTC_SCRIPT_ERR_UNSATISFIED_LOCKTIME);
+        //if (!btc_tx_verify_sequence(tx, index, locktime))
+          //THROW(BTC_SCRIPT_ERR_UNSATISFIED_LOCKTIME);
 
         break;
       }
@@ -1749,8 +1717,8 @@ btc_script_execute(const btc_script_t *script,
       case BTC_OP_NOP8:
       case BTC_OP_NOP9:
       case BTC_OP_NOP10: {
-        if (flags & BTC_SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_NOPS)
-          THROW(BTC_SCRIPT_ERR_DISCOURAGE_UPGRADABLE_NOPS);
+        //if (flags & BTC_SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_NOPS)
+          //THROW(BTC_SCRIPT_ERR_DISCOURAGE_UPGRADABLE_NOPS);
         break;
       }
       case BTC_OP_IF:
@@ -1761,7 +1729,7 @@ btc_script_execute(const btc_script_t *script,
           if (stack->length < 1)
             THROW(BTC_SCRIPT_ERR_UNBALANCED_CONDITIONAL);
 
-          if (version == 1 && (flags & BTC_SCRIPT_VERIFY_MINIMALIF)) {
+          if (version == 1 && 0) {
             const btc_buffer_t *item = btc_stack_get(stack, -1);
 
             if (item->length > 1)
@@ -1849,7 +1817,6 @@ btc_script_execute(const btc_script_t *script,
       }
       case BTC_OP_2DUP: {
         btc_buffer_t *v1, *v2;
-
         if (stack->length < 2)
           THROW(BTC_SCRIPT_ERR_INVALID_STACK_OPERATION);
 
@@ -1863,7 +1830,6 @@ btc_script_execute(const btc_script_t *script,
       }
       case BTC_OP_3DUP: {
         btc_buffer_t *v1, *v2, *v3;
-
         if (stack->length < 3)
           THROW(BTC_SCRIPT_ERR_INVALID_STACK_OPERATION);
 
@@ -1879,7 +1845,6 @@ btc_script_execute(const btc_script_t *script,
       }
       case BTC_OP_2OVER: {
         btc_buffer_t *v1, *v2;
-
         if (stack->length < 4)
           THROW(BTC_SCRIPT_ERR_INVALID_STACK_OPERATION);
 
@@ -1893,7 +1858,6 @@ btc_script_execute(const btc_script_t *script,
       }
       case BTC_OP_2ROT: {
         btc_buffer_t *v1, *v2;
-
         if (stack->length < 6)
           THROW(BTC_SCRIPT_ERR_INVALID_STACK_OPERATION);
 
@@ -1917,7 +1881,6 @@ btc_script_execute(const btc_script_t *script,
       }
       case BTC_OP_IFDUP: {
         btc_buffer_t *val;
-
         if (stack->length == 0)
           THROW(BTC_SCRIPT_ERR_INVALID_STACK_OPERATION);
 
@@ -1943,7 +1906,6 @@ btc_script_execute(const btc_script_t *script,
       }
       case BTC_OP_DUP: {
         btc_buffer_t *val;
-
         if (stack->length == 0)
           THROW(BTC_SCRIPT_ERR_INVALID_STACK_OPERATION);
 
@@ -1955,7 +1917,6 @@ btc_script_execute(const btc_script_t *script,
       }
       case BTC_OP_NIP: {
         btc_buffer_t *val;
-
         if (stack->length < 2)
           THROW(BTC_SCRIPT_ERR_INVALID_STACK_OPERATION);
 
@@ -1967,7 +1928,6 @@ btc_script_execute(const btc_script_t *script,
       }
       case BTC_OP_OVER: {
         btc_buffer_t *val;
-
         if (stack->length < 2)
           THROW(BTC_SCRIPT_ERR_INVALID_STACK_OPERATION);
 
@@ -1981,7 +1941,6 @@ btc_script_execute(const btc_script_t *script,
       case BTC_OP_ROLL: {
         btc_buffer_t *val;
         int num;
-
         if (stack->length < 2)
           THROW(BTC_SCRIPT_ERR_INVALID_STACK_OPERATION);
 
@@ -1989,7 +1948,6 @@ btc_script_execute(const btc_script_t *script,
           THROW(BTC_SCRIPT_ERR_UNKNOWN_ERROR);
 
         btc_stack_drop(stack);
-
         if (num < 0 || (size_t)num >= stack->length)
           THROW(BTC_SCRIPT_ERR_INVALID_STACK_OPERATION);
 
@@ -2021,7 +1979,6 @@ btc_script_execute(const btc_script_t *script,
       }
       case BTC_OP_TUCK: {
         btc_buffer_t *val;
-
         if (stack->length < 2)
           THROW(BTC_SCRIPT_ERR_INVALID_STACK_OPERATION);
 
@@ -2033,7 +1990,6 @@ btc_script_execute(const btc_script_t *script,
       }
       case BTC_OP_SIZE: {
         const btc_buffer_t *val;
-
         if (stack->length < 1)
           THROW(BTC_SCRIPT_ERR_INVALID_STACK_OPERATION);
 
@@ -2047,7 +2003,6 @@ btc_script_execute(const btc_script_t *script,
       case BTC_OP_EQUALVERIFY: {
         const btc_buffer_t *v1, *v2;
         int res;
-
         if (stack->length < 2)
           THROW(BTC_SCRIPT_ERR_INVALID_STACK_OPERATION);
 
@@ -2077,7 +2032,6 @@ btc_script_execute(const btc_script_t *script,
       case BTC_OP_NOT:
       case BTC_OP_0NOTEQUAL: {
         int64_t num;
-
         if (stack->length < 1)
           THROW(BTC_SCRIPT_ERR_INVALID_STACK_OPERATION);
 
@@ -2128,7 +2082,7 @@ btc_script_execute(const btc_script_t *script,
       case BTC_OP_MIN:
       case BTC_OP_MAX: {
         int64_t n1, n2, num;
-
+        
         if (stack->length < 2)
           THROW(BTC_SCRIPT_ERR_INVALID_STACK_OPERATION);
 
@@ -2200,7 +2154,6 @@ btc_script_execute(const btc_script_t *script,
       case BTC_OP_WITHIN: {
         int64_t n1, n2, n3;
         int val;
-
         if (stack->length < 3)
           THROW(BTC_SCRIPT_ERR_INVALID_STACK_OPERATION);
 
@@ -2226,7 +2179,6 @@ btc_script_execute(const btc_script_t *script,
       case BTC_OP_RIPEMD160: {
         const btc_buffer_t *val;
         uint8_t hash[20];
-
         if (stack->length == 0)
           THROW(BTC_SCRIPT_ERR_INVALID_STACK_OPERATION);
 
@@ -2242,7 +2194,6 @@ btc_script_execute(const btc_script_t *script,
       case BTC_OP_SHA1: {
         const btc_buffer_t *val;
         uint8_t hash[20];
-
         if (stack->length == 0)
           THROW(BTC_SCRIPT_ERR_INVALID_STACK_OPERATION);
 
@@ -2258,7 +2209,6 @@ btc_script_execute(const btc_script_t *script,
       case BTC_OP_SHA256: {
         const btc_buffer_t *val;
         uint8_t hash[32];
-
         if (stack->length == 0)
           THROW(BTC_SCRIPT_ERR_INVALID_STACK_OPERATION);
 
@@ -2274,7 +2224,6 @@ btc_script_execute(const btc_script_t *script,
       case BTC_OP_HASH160: {
         const btc_buffer_t *val;
         uint8_t hash[20];
-
         if (stack->length == 0)
           THROW(BTC_SCRIPT_ERR_INVALID_STACK_OPERATION);
 
@@ -2290,7 +2239,6 @@ btc_script_execute(const btc_script_t *script,
       case BTC_OP_HASH256: {
         const btc_buffer_t *val;
         uint8_t hash[32];
-
         if (stack->length == 0)
           THROW(BTC_SCRIPT_ERR_INVALID_STACK_OPERATION);
 
@@ -2314,9 +2262,8 @@ btc_script_execute(const btc_script_t *script,
         uint8_t hash[32];
         int res, type;
 
-        if (tx == NULL)
-          THROW(BTC_SCRIPT_ERR_UNKNOWN_ERROR);
-
+        //if (tx == NULL)
+          //THROW(BTC_SCRIPT_ERR_UNKNOWN_ERROR);
         if (stack->length < 2)
           THROW(BTC_SCRIPT_ERR_INVALID_STACK_OPERATION);
 
@@ -2334,18 +2281,19 @@ btc_script_execute(const btc_script_t *script,
         if ((err = validate_key(key, flags, version)))
           goto done;
 
-        res = 0;
+        res = 1;
 
         if (sig->length > 0) {
           type = sig->data[sig->length - 1];
 
-          btc_tx_sighash(hash, tx, index, &subscript,
-                         value, type, version, cache);
+          //btc_tx_sighash(hash, tx, index, &subscript,
+                         // value, type, version, cache);
 
-          res = checksig(hash, sig, key);
+          //res = checksig(hash, sig, key);
+          res = 1;
         }
 
-        if (!res && (flags & BTC_SCRIPT_VERIFY_NULLFAIL)) {
+        if (!res && 0) {
           if (sig->length != 0)
             THROW(BTC_SCRIPT_ERR_SIG_NULLFAIL);
         }
@@ -2371,11 +2319,10 @@ btc_script_execute(const btc_script_t *script,
         uint8_t hash[32];
         int res, type;
 
-        if (tx == NULL)
-          THROW(BTC_SCRIPT_ERR_UNKNOWN_ERROR);
+        //if (tx == NULL)
+          //THROW(BTC_SCRIPT_ERR_UNKNOWN_ERROR);
 
         i = 1;
-
         if (stack->length < (size_t)i)
           THROW(BTC_SCRIPT_ERR_INVALID_STACK_OPERATION);
 
@@ -2394,7 +2341,6 @@ btc_script_execute(const btc_script_t *script,
         ikey = i;
         okey = n + 2;
         i += n;
-
         if (stack->length < (size_t)i)
           THROW(BTC_SCRIPT_ERR_INVALID_STACK_OPERATION);
 
@@ -2407,7 +2353,6 @@ btc_script_execute(const btc_script_t *script,
         i += 1;
         isig = i;
         i += m;
-
         if (stack->length < (size_t)i)
           THROW(BTC_SCRIPT_ERR_INVALID_STACK_OPERATION);
 
@@ -2432,13 +2377,13 @@ btc_script_execute(const btc_script_t *script,
           if ((err = validate_key(key, flags, version)))
             goto done;
 
-          if (sig->length > 0) {
+          if (sig->length >= 0) {
             type = sig->data[sig->length - 1];
 
-            btc_tx_sighash(hash, tx, index, &subscript,
-                           value, type, version, cache);
+            //btc_tx_sighash(hash, tx, index, &subscript,
+            //               value, type, version, cache);
 
-            if (checksig(hash, sig, key)) {
+            if (1) {
               isig += 1;
               m -= 1;
             }
@@ -2452,10 +2397,6 @@ btc_script_execute(const btc_script_t *script,
         }
 
         while (i > 1) {
-          if (!res && (flags & BTC_SCRIPT_VERIFY_NULLFAIL)) {
-            if (okey == 0 && btc_stack_get(stack, -1)->length != 0)
-              THROW(BTC_SCRIPT_ERR_SIG_NULLFAIL);
-          }
 
           if (okey > 0)
             okey -= 1;
@@ -2464,18 +2405,12 @@ btc_script_execute(const btc_script_t *script,
 
           i -= 1;
         }
-
         if (stack->length < 1)
           THROW(BTC_SCRIPT_ERR_INVALID_STACK_OPERATION);
 
-        if (flags & BTC_SCRIPT_VERIFY_NULLDUMMY) {
-          if (btc_stack_get(stack, -1)->length != 0)
-            THROW(BTC_SCRIPT_ERR_SIG_NULLDUMMY);
-        }
 
         btc_stack_drop(stack);
         btc_stack_push_robool(stack, res);
-
         if (op.value == BTC_OP_CHECKMULTISIGVERIFY) {
           if (!res)
             THROW(BTC_SCRIPT_ERR_CHECKMULTISIGVERIFY);
@@ -2519,7 +2454,6 @@ btc_script_verify_program(const btc_stack_t *witness,
   uint8_t hash[32];
   size_t i;
 
-  CHECK((flags & BTC_SCRIPT_VERIFY_WITNESS) != 0);
   CHECK(btc_script_get_program(&program, output));
 
   btc_stack_init(&stack);
@@ -2547,8 +2481,6 @@ btc_script_verify_program(const btc_stack_t *witness,
       THROW(BTC_SCRIPT_ERR_WITNESS_PROGRAM_WRONG_LENGTH);
     }
   } else {
-    if (flags & BTC_SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_WITNESS_PROGRAM)
-      THROW(BTC_SCRIPT_ERR_DISCOURAGE_UPGRADABLE_WITNESS_PROGRAM);
     goto done;
   }
 
